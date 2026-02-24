@@ -11,7 +11,8 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
-  animated_text_kit: ^4.2.2   # 👈 ADDED FOR ANIMATION
+  animated_text_kit: ^4.2.2
+
 
 dev_dependencies:
   flutter_test:
@@ -24,6 +25,7 @@ flutter:
 
   assets:
     - assets/logo.png
+    - assets/campus.png
 
 flutter_launcher_icons:
   android: true

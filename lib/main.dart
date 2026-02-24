@@ -9,8 +9,8 @@ import 'student_profile_screen.dart';
 final ValueNotifier<ThemeMode> themeNotifier =
     ValueNotifier(ThemeMode.light);
 
-
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const EduSphere());
 }
 
@@ -333,7 +333,7 @@ class StudentDashboard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: colorScheme.onSurface, // ✅ FIXED COLOR
+                color: colorScheme.onSurface, 
               ),
             ),
           ],
@@ -362,7 +362,7 @@ class StudentDashboard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: colorScheme.onBackground, // ✅ FIXED
+                color: colorScheme.onBackground, 
               ),
             ),
             const SizedBox(height: 12),
@@ -449,7 +449,7 @@ class TeacherDashboard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: colorScheme.surface, // ✅ DARK MODE FIX
+          color: colorScheme.surface, 
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
@@ -467,7 +467,7 @@ class TeacherDashboard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: colorScheme.onSurface, // ✅ FIX
+                color: colorScheme.onSurface, 
               ),
             ),
           ],
