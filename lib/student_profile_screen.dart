@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../main.dart'; // 👈 REQUIRED to access themeNotifier
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../main.dart';
 
 class StudentProfileScreen extends StatefulWidget {
   const StudentProfileScreen({super.key});
@@ -9,14 +10,52 @@ class StudentProfileScreen extends StatefulWidget {
 }
 
 class _StudentProfileScreenState extends State<StudentProfileScreen> {
+  final supabase = Supabase.instance.client;
+
   bool darkMode = false;
   bool notifications = true;
+
+  String name = "";
+  String email = "";
+  String roll = "";
+  String department = "";
+
+  @override
+  void initState() {
+    super.initState();
+    fetchUserData();
+  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Sync switch with current app theme
     darkMode = Theme.of(context).brightness == Brightness.dark;
+  }
+
+  Future fetchUserData() async {
+    final user = supabase.auth.currentUser;
+
+    final data = await supabase
+        .from('users')
+        .select()
+        .eq('id', user!.id)
+        .single();
+
+    setState(() {
+      name = data['name'] ?? "";
+      email = data['email'] ?? "";
+      roll = data['roll_number'] ?? "";
+      department = data['department'] ?? "";
+    });
+  }
+
+  String getInitials() {
+    if (name.isEmpty) return "";
+    List parts = name.split(" ");
+    if (parts.length == 1) {
+      return parts[0][0].toUpperCase();
+    }
+    return (parts[0][0] + parts[1][0]).toUpperCase();
   }
 
   Widget infoTile(
@@ -129,25 +168,31 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Column(
-                children: const [
+                children: [
                   CircleAvatar(
                     radius: 45,
                     backgroundColor: Colors.white,
-                    child: Icon(Icons.person,
-                        size: 45, color: Color(0xff6A5AE0)),
+                    child: Text(
+                      getInitials(),
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xff6A5AE0),
+                      ),
+                    ),
                   ),
-                  SizedBox(height: 14),
+                  const SizedBox(height: 14),
                   Text(
-                    "Student Name",
-                    style: TextStyle(
+                    name,
+                    style: const TextStyle(
                         color: Colors.white,
                         fontSize: 18,
                         fontWeight: FontWeight.bold),
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
-                    "student@email.com",
-                    style: TextStyle(color: Colors.white70),
+                    email,
+                    style: const TextStyle(color: Colors.white70),
                   ),
                 ],
               ),
@@ -156,8 +201,8 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
             const SizedBox(height: 30),
 
             /// Student Info
-            infoTile(context, Icons.badge, "Roll Number", "EDU12345"),
-            infoTile(context, Icons.school, "Department", "Computer Science"),
+            infoTile(context, Icons.badge, "Roll Number", roll),
+            infoTile(context, Icons.school, "Department", department),
             infoTile(context, Icons.timeline, "Semester", "Semester 4"),
 
             const SizedBox(height: 30),
@@ -176,7 +221,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
             ),
             const SizedBox(height: 12),
 
-            /// DARK MODE (REAL)
+            /// DARK MODE
             switchTile(context, Icons.dark_mode, "Dark Mode", darkMode, (val) {
               setState(() {
                 darkMode = val;
@@ -207,8 +252,13 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                onPressed: () {
-                  Navigator.pop(context);
+                onPressed: () async {
+                  await supabase.auth.signOut();
+
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  );
                 },
                 icon: const Icon(Icons.logout),
                 label: const Text(

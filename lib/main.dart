@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
-
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'attendance_screen.dart';
 import 'assignments_screen.dart';
 import 'campus_mapscreen.dart';
 import 'student_profile_screen.dart';
+import 'signup_screen.dart';
 
 final ValueNotifier<ThemeMode> themeNotifier =
     ValueNotifier(ThemeMode.light);
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await Supabase.initialize(
+    url: 'https://brkbprjnplojequphmyt.supabase.co',
+    anonKey: 'sb_publishable_mBLeupIO4MB_BzR7KWjiTQ_zKllViwT',
+  );
+
   runApp(const EduSphere());
 }
 
@@ -120,8 +127,60 @@ class _SplashScreenState extends State<SplashScreen> {
 
 /* ---------------- LOGIN ---------------- */
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+
+  final supabase = Supabase.instance.client;
+
+  Future<void> login() async {
+  try {
+    final res = await supabase.auth.signInWithPassword(
+      email: emailController.text,
+      password: passwordController.text,
+    );
+
+    final user = res.user;
+
+    if (user != null) {
+
+      final data = await supabase
+          .from('users')
+          .select()
+          .eq('id', user.id)
+          .single();
+
+      if (data['role'] == 'student') {
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const StudentHome()),
+        );
+
+      } else {
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const TeacherDashboard()),
+        );
+
+      }
+    }
+
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Login Failed: $e")),
+    );
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -143,27 +202,48 @@ class LoginScreen extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+
                 const Text(
                   "Welcome Back",
                   style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
                 ),
+
                 const SizedBox(height: 20),
-                const TextField(decoration: InputDecoration(hintText: "Email")),
+
+                TextField(
+                  controller: emailController,
+                  decoration: const InputDecoration(hintText: "Email"),
+                ),
+
                 const SizedBox(height: 12),
-                const TextField(
-                  decoration: InputDecoration(hintText: "Password"),
+
+                TextField(
+                  controller: passwordController,
+                  decoration: const InputDecoration(hintText: "Password"),
                   obscureText: true,
                 ),
+
                 const SizedBox(height: 20),
+
                 ElevatedButton(
+                  onPressed: login,
+                  child: const Text("LOGIN"),
+                ),
+
+                const SizedBox(height: 10),
+
+                TextButton(
                   onPressed: () {
-                    Navigator.pushReplacement(
+                    Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const RoleSelection()),
+                      MaterialPageRoute(
+                        builder: (_) => const SignupScreen(),
+                      ),
                     );
                   },
-                  child: const Text("LOGIN"),
-                )
+                  child: const Text("Don't have an account? Sign Up"),
+                ),
+
               ],
             ),
           ),
