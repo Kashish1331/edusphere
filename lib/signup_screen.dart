@@ -9,64 +9,68 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
+
   final nameController = TextEditingController();
   final rollController = TextEditingController();
   final teacherController = TextEditingController();
+  final deptController = TextEditingController();
   final passwordController = TextEditingController();
-
-  String role = "student";
-  String department = "CSE";
 
   final supabase = Supabase.instance.client;
 
+  String role = "student";
+  int semester = 1;
+
+  String specialization = "None";
+
   Future<void> signUp() async {
-    try {
-      String email;
 
-      if (role == "student") {
-        email = "${rollController.text.toLowerCase()}@student.edusphere.app";
-      } else {
-        email = "${teacherController.text.toLowerCase()}@teacher.edusphere.app";
-      }
+    String email;
 
-      final response = await supabase.auth.signUp(
-        email: email,
-        password: passwordController.text,
-      );
+    if (role == "student") {
+      email = "${rollController.text}@student.edusphere.app";
+    } else {
+      email = "${teacherController.text}@teacher.edusphere.app";
+    }
 
-      final user = response.user;
+    final response = await supabase.auth.signUp(
+      email: email,
+      password: passwordController.text,
+    );
 
-      if (user != null) {
-        await supabase.from('users').insert({
-          'id': user.id,
-          'name': nameController.text,
-          'email': email,
-          'role': role,
-          'roll_number': role == "student" ? rollController.text : null,
-          'teacher_id': role == "teacher" ? teacherController.text : null,
-          'department': department,
-        });
+    final user = response.user;
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Account Created Successfully")),
-        );
+    if (user != null) {
 
-        Navigator.pop(context);
-      }
-    } catch (e) {
+      await supabase.from('users').insert({
+        'id': user.id,
+        'name': nameController.text,
+        'email': email,
+        'role': role,
+        'roll_number': role == "student" ? rollController.text : null,
+        'teacher_id': role == "teacher" ? teacherController.text : null,
+        'department': deptController.text,
+        'semester': semester,
+        'specialization': semester >= 3 ? specialization : "None"
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Signup failed: $e")),
+        const SnackBar(content: Text("Account Created Successfully")),
       );
+
+      Navigator.pop(context);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       appBar: AppBar(title: const Text("Sign Up")),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: SingleChildScrollView(
+
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
           child: Column(
             children: [
 
@@ -106,24 +110,78 @@ class _SignupScreenState extends State<SignupScreen> {
 
               const SizedBox(height: 10),
 
-              /// Department Dropdown
-              DropdownButtonFormField(
-                value: department,
+              TextField(
+                controller: deptController,
                 decoration: const InputDecoration(labelText: "Department"),
-                items: const [
-                  DropdownMenuItem(value: "CSE", child: Text("CSE")),
-                  DropdownMenuItem(value: "AI", child: Text("AI")),
-                  DropdownMenuItem(value: "ECE", child: Text("ECE")),
-                  DropdownMenuItem(value: "MBA", child: Text("MBA")),
-                  DropdownMenuItem(value: "LAW", child: Text("LAW")),
-                  DropdownMenuItem(value: "BBA", child: Text("BBA")),
-                ],
+              ),
+
+              const SizedBox(height: 10),
+
+              /// Semester dropdown
+              DropdownButtonFormField<int>(
+                value: semester,
+                decoration: const InputDecoration(labelText: "Semester"),
+                items: List.generate(
+                  8,
+                  (index) => DropdownMenuItem(
+                    value: index + 1,
+                    child: Text("Semester ${index + 1}"),
+                  ),
+                ),
                 onChanged: (value) {
                   setState(() {
-                    department = value!;
+                    semester = value!;
                   });
                 },
               ),
+
+              const SizedBox(height: 10),
+
+              /// Specialization only if semester >=3
+              if (semester >= 3)
+                DropdownButtonFormField(
+                  value: specialization,
+                  decoration: const InputDecoration(labelText: "Specialization"),
+                  items: const [
+
+                    DropdownMenuItem(
+                        value: "None",
+                        child: Text("None (First Year)")),
+
+                    DropdownMenuItem(
+                        value: "AI",
+                        child: Text("Artificial Intelligence")),
+
+                    DropdownMenuItem(
+                        value: "Data Science",
+                        child: Text("Data Science")),
+
+                    DropdownMenuItem(
+                        value: "Cyber Security",
+                        child: Text("Cyber Security")),
+
+                    DropdownMenuItem(
+                        value: "Full Stack",
+                        child: Text("Full Stack Development")),
+
+                    DropdownMenuItem(
+                        value: "Blockchain",
+                        child: Text("Blockchain")),
+
+                    DropdownMenuItem(
+                        value: "Game Development",
+                        child: Text("Game Development")),
+
+                    DropdownMenuItem(
+                        value: "CSE Core",
+                        child: Text("CSE Core")),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      specialization = value!;
+                    });
+                  },
+                ),
 
               const SizedBox(height: 10),
 
@@ -139,6 +197,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 onPressed: signUp,
                 child: const Text("Create Account"),
               )
+
             ],
           ),
         ),
