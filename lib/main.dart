@@ -7,6 +7,9 @@ import 'campus_mapscreen.dart';
 import 'student_profile_screen.dart';
 import 'signup_screen.dart';
 import 'fee_portal_screen.dart';
+import 'timetable_screen.dart';
+import 'holidays_screen.dart';
+import 'ai_chat_screen.dart';
 
 final ValueNotifier<ThemeMode> themeNotifier =
     ValueNotifier(ThemeMode.light);
@@ -473,6 +476,9 @@ class StudentDashboard extends StatelessWidget {
             card(context, Icons.assignment, "Assignments", AssignmentsScreen()),
             card(context, Icons.map, "Campus Map", CampusMapScreen()),
             card(context, Icons.account_balance_wallet, "Fee Portal", FeePortalScreen()),
+            card(context, Icons.schedule, "Timetable", TimetableScreen()),
+            card(context, Icons.calendar_month, "Upcoming Holidays", const HolidaysScreen()),
+            card(context, Icons.smart_toy, "AI Assistant", const AIChatScreen()),
           ],
         ),
       ),

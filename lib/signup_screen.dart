@@ -110,9 +110,42 @@ class _SignupScreenState extends State<SignupScreen> {
 
               const SizedBox(height: 10),
 
-              TextField(
-                controller: deptController,
+              /// Department dropdown
+              DropdownButtonFormField<String>(
+                value: deptController.text.isEmpty ? null : deptController.text,
                 decoration: const InputDecoration(labelText: "Department"),
+                items: const [
+
+                  DropdownMenuItem(
+                      value: "BTech CSE",
+                      child: Text("BTech CSE")),
+
+                  DropdownMenuItem(
+                      value: "BBA",
+                      child: Text("BBA")),
+
+                  DropdownMenuItem(
+                      value: "MBA",
+                      child: Text("MBA")),
+
+                  DropdownMenuItem(
+                      value: "BCA",
+                      child: Text("BCA")),
+
+                  DropdownMenuItem(
+                      value: "MCA",
+                      child: Text("MCA")),
+
+                  DropdownMenuItem(
+                      value: "Law",
+                      child: Text("Law")),
+
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    deptController.text = value!;
+                  });
+                },
               ),
 
               const SizedBox(height: 10),
@@ -137,8 +170,8 @@ class _SignupScreenState extends State<SignupScreen> {
 
               const SizedBox(height: 10),
 
-              /// Specialization only if semester >=3
-              if (semester >= 3)
+              /// Specialization only for CSE students semester >=3
+              if (semester >= 3 && deptController.text == "BTech CSE")
                 DropdownButtonFormField(
                   value: specialization,
                   decoration: const InputDecoration(labelText: "Specialization"),
