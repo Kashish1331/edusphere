@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class TimetableScreen extends StatelessWidget {
   const TimetableScreen({super.key});
@@ -13,32 +14,23 @@ class TimetableScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text("Timetable"),
       ),
-
       body: Padding(
         padding: const EdgeInsets.all(20),
-
         child: GridView.builder(
-
           itemCount: days.length,
-
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
           ),
-
           itemBuilder: (context, index) {
-
             final day = days[index];
 
             return GestureDetector(
-
               onTap: () {
                 Navigator.push(
                   context,
@@ -47,16 +39,13 @@ class TimetableScreen extends StatelessWidget {
                   ),
                 );
               },
-
               child: Container(
-
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [Color(0xff6A5AE0), Color(0xff8FD3FE)],
                   ),
                   borderRadius: BorderRadius.circular(20),
                 ),
-
                 child: Center(
                   child: Text(
                     day,
@@ -76,43 +65,102 @@ class TimetableScreen extends StatelessWidget {
   }
 }
 
-class DayTimetableScreen extends StatelessWidget {
-
+class DayTimetableScreen extends StatefulWidget {
   final String day;
 
   const DayTimetableScreen({super.key, required this.day});
+
+  @override
+  State<DayTimetableScreen> createState() => _DayTimetableScreenState();
+}
+
+class _DayTimetableScreenState extends State<DayTimetableScreen> {
+
+  final supabase = Supabase.instance.client;
+
+  Future<List<dynamic>> fetchTimetable() async {
+
+    final user = supabase.auth.currentUser;
+
+    if (user == null) return [];
+
+    /// FETCH USER DATA
+    final userData = await supabase
+        .from('users')
+        .select()
+        .eq('id', user.id)
+        .single();
+
+    final semester = userData['semester'];
+    final department = userData['department'];
+    String specialization = userData['specialization'] ?? "None";
+
+    /// FIX possible mismatch
+    if (specialization == "None (First Year)") {
+      specialization = "None";
+    }
+
+    /// DEBUG PRINTS
+    print("----- TIMETABLE QUERY -----");
+    print("Department: $department");
+    print("Semester: $semester");
+    print("Specialization: $specialization");
+    print("Day: ${widget.day}");
+
+    /// FETCH TIMETABLE
+    final data = await supabase
+    .from('timetable')
+    .select()
+    .eq('department', department)
+    .eq('semester', semester)
+    .eq('day', widget.day)
+    .order('time');
+
+    print("Rows returned: ${data.length}");
+
+    return data;
+  }
 
   @override
   Widget build(BuildContext context) {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text("$day Timetable"),
+        title: Text("${widget.day} Timetable"),
       ),
+      body: FutureBuilder<List<dynamic>>(
+        future: fetchTimetable(),
+        builder: (context, snapshot) {
 
-      body: ListView(
-        padding: const EdgeInsets.all(20),
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-        children: const [
+          if (snapshot.hasError) {
+            return const Center(child: Text("Error loading timetable"));
+          }
 
-          TimetableTile(
-            subject: "Operating Systems",
-            time: "9:00 - 10:00",
-            type: "Lecture",
-          ),
+          final classes = snapshot.data ?? [];
 
-          TimetableTile(
-            subject: "Computer Networks",
-            time: "10:00 - 11:00",
-            type: "Lecture",
-          ),
+          if (classes.isEmpty) {
+            return const Center(child: Text("No classes scheduled"));
+          }
 
-          TimetableTile(
-            subject: "Machine Learning Lab",
-            time: "2:00 - 4:00",
-            type: "Lab",
-          ),
-        ],
+          return ListView.builder(
+            padding: const EdgeInsets.all(20),
+            itemCount: classes.length,
+            itemBuilder: (context, index) {
+
+              final c = classes[index];
+
+              return TimetableTile(
+                subject: c['subject'],
+                time: c['time'],
+                type: c['type'],
+              );
+            },
+          );
+        },
       ),
     );
   }
@@ -139,11 +187,9 @@ class TimetableTile extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
-
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.08),
@@ -151,7 +197,6 @@ class TimetableTile extends StatelessWidget {
           ),
         ],
       ),
-
       child: Row(
         children: [
 
@@ -164,7 +209,6 @@ class TimetableTile extends StatelessWidget {
 
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-
             children: [
 
               Text(

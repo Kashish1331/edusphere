@@ -309,12 +309,13 @@ final data = response.first;
                   ),
                 ),
 
-                onPressed: () {
-
-                  supabase.auth.signOut();
-
-                  Navigator.pop(context);
-
+                onPressed: () async {
+                  await supabase.auth.signOut();
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    (route) => false,
+                  );
                 },
 
                 icon: const Icon(Icons.logout),

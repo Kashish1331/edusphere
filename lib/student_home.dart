@@ -10,12 +10,11 @@ class _StudentHomeState extends State<StudentHome> {
   int _currentIndex = 0;
 
   final List<Widget> _screens = [
-    StudentDashboard(),
-    AttendanceScreen(),
-    CampusMapScreen(),
-    StudentProfileScreen(),
-    ProfileScreen(),
-  ];
+  StudentDashboard(),
+  AttendanceScreen(),
+  CampusMapScreen(),
+  StudentProfileScreen(),
+];
 
   @override
   Widget build(BuildContext context) {
@@ -31,11 +30,11 @@ class _StudentHomeState extends State<StudentHome> {
           });
         },
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.check_circle), label: "Attendance"),
-          BottomNavigationBarItem(icon: Icon(Icons.map), label: "Map"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
-        ],
+  BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
+  BottomNavigationBarItem(icon: Icon(Icons.check_circle), label: "Attendance"),
+  BottomNavigationBarItem(icon: Icon(Icons.map), label: "Map"),
+  BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
+],
       ),
     );
   }

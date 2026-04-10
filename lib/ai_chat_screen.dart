@@ -16,7 +16,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
   List<Map<String, String>> messages = [];
 
   Future<void> askAI(String question) async {
-  const apiKey = "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";
+  const apiKey = "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";
 
   try {
     final response = await http.post(
@@ -24,7 +24,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
       headers: {
         "Authorization": "Bearer $apiKey",
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://edusphere.app", // can be any string
+        "HTTP-Referer": "https://edusphere.app", 
         "X-Title": "EduSphere AI"
       },
       body: jsonEncode({

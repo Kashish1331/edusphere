@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'attendance_screen.dart';
-import 'assignments_screen.dart';
 import 'campus_mapscreen.dart';
 import 'student_profile_screen.dart';
 import 'signup_screen.dart';
@@ -10,6 +9,15 @@ import 'fee_portal_screen.dart';
 import 'timetable_screen.dart';
 import 'holidays_screen.dart';
 import 'ai_chat_screen.dart';
+import 'package:flutter/material.dart';
+import 'generate_qr_screen.dart';
+import 'upload_assignment_screen.dart';
+import 'timetable_screen.dart';
+import 'view_assignment_screen.dart';
+import 'qr_attendance_screen.dart';
+import 'teacher_profile_screen.dart';
+import 'package:confetti/confetti.dart';
+import 'upload_event_screen.dart';
 
 final ValueNotifier<ThemeMode> themeNotifier =
     ValueNotifier(ThemeMode.light);
@@ -21,6 +29,7 @@ void main() async {
     url: 'https://brkbprjnplojequphmyt.supabase.co',
     anonKey: 'sb_publishable_mBLeupIO4MB_BzR7KWjiTQ_zKllViwT',
   );
+
 
   runApp(const EduSphere());
 }
@@ -328,12 +337,11 @@ class _StudentHomeState extends State<StudentHome> {
   int index = 0;
 
   final screens = [
-    const StudentDashboard(),
-    AttendanceScreen(),
-    AssignmentsScreen(),
-    CampusMapScreen(),
-    StudentProfileScreen(),
-  ];
+  const StudentDashboard(),
+  const AttendanceScreen(),
+  const CampusMapScreen(),
+  const StudentProfileScreen(),
+];
 
   @override
   Widget build(BuildContext context) {
@@ -345,44 +353,85 @@ class _StudentHomeState extends State<StudentHome> {
         selectedItemColor: const Color(0xff6A5AE0),
         onTap: (i) => setState(() => index = i),
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.check_circle), label: "Attendance"),
-          BottomNavigationBarItem(icon: Icon(Icons.assignment), label: "Assignments"),
-          BottomNavigationBarItem(icon: Icon(Icons.map), label: "Map"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
-        ],
+  BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
+  BottomNavigationBarItem(icon: Icon(Icons.check_circle), label: "Attendance"),
+  BottomNavigationBarItem(icon: Icon(Icons.map), label: "Map"),
+  BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
+],
       ),
     );
   }
 }
 
-/* ---------------- STUDENT DASHBOARD (WITH NOTIFICATIONS) ---------------- */
+/* ---------------- STUDENT DASHBOARD ---------------- */
 
-class StudentDashboard extends StatelessWidget {
+class StudentDashboard extends StatefulWidget {
   const StudentDashboard({super.key});
 
-  Widget notificationTile(
-      BuildContext context, IconData icon, String text, Color color) {
+  @override
+  State<StudentDashboard> createState() => _StudentDashboardState();
+}
+
+class _StudentDashboardState extends State<StudentDashboard> {
+
+  Future<List<dynamic>> fetchEvents() async {
+
+    final supabase = Supabase.instance.client;
+
+    final data = await supabase
+        .from('campus_events')
+        .select()
+        .order('event_date');
+
+    return data;
+  }
+
+  Widget eventNotification(Map event) {
+
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
+
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: Colors.orange.withOpacity(0.15),
         borderRadius: BorderRadius.circular(14),
       ),
+
       child: Row(
         children: [
-          Icon(icon, color: color),
-          const SizedBox(width: 12),
+
+          const Text(
+            "📢",
+            style: TextStyle(fontSize: 22),
+          ),
+
+          const SizedBox(width: 10),
+
           Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.w600,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+
+                Text(
+                  event['title'] ?? "",
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+
+                const SizedBox(height: 2),
+
+                Text(
+                  event['description'] ?? "",
+                  style: const TextStyle(fontSize: 13),
+                ),
+
+              ],
             ),
           ),
+
+          const Text("📅")
         ],
       ),
     );
@@ -390,17 +439,23 @@ class StudentDashboard extends StatelessWidget {
 
   Widget card(
       BuildContext context, IconData icon, String title, Widget screen) {
+
     final colorScheme = Theme.of(context).colorScheme;
 
     return GestureDetector(
+
       onTap: () =>
           Navigator.push(context, MaterialPageRoute(builder: (_) => screen)),
+
       child: Container(
+
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(20),
+
         decoration: BoxDecoration(
           color: colorScheme.surface,
           borderRadius: BorderRadius.circular(20),
+
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.1),
@@ -408,16 +463,20 @@ class StudentDashboard extends StatelessWidget {
             ),
           ],
         ),
+
         child: Row(
           children: [
+
             Icon(icon, color: colorScheme.primary, size: 30),
+
             const SizedBox(width: 20),
+
             Text(
               title,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: colorScheme.onSurface, 
+                color: colorScheme.onSurface,
               ),
             ),
           ],
@@ -428,65 +487,89 @@ class StudentDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
+
       appBar: AppBar(
         title: const Text("Student Dashboard"),
         backgroundColor: const Color(0xff6A5AE0),
         foregroundColor: Colors.white,
       ),
+
       body: SingleChildScrollView(
+
         padding: const EdgeInsets.all(16),
+
         child: Column(
+
           crossAxisAlignment: CrossAxisAlignment.start,
+
           children: [
-            Text(
-              "Notifications",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onBackground, 
-              ),
-            ),
-            const SizedBox(height: 12),
 
-            notificationTile(
-              context,
-              Icons.assignment,
-              "Flutter assignment due tomorrow",
-              Colors.orange,
-            ),
-            notificationTile(
-              context,
-              Icons.warning,
-              "Low attendance in Computer Science",
-              Colors.red,
-            ),
-            notificationTile(
-              context,
-              Icons.campaign,
-              "New campus event announced",
-              Colors.blue,
+            /// EVENT NOTIFICATIONS
+            FutureBuilder(
+
+              future: fetchEvents(),
+
+              builder: (context, snapshot) {
+
+                if (!snapshot.hasData) {
+                  return const SizedBox();
+                }
+
+                final events = snapshot.data as List;
+
+                if (events.isEmpty) {
+                  return const SizedBox();
+                }
+
+                return Column(
+
+                  crossAxisAlignment: CrossAxisAlignment.start,
+
+                  children: [
+
+                    const Text(
+                      "Campus Events",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    ...events.take(3).map((e) => eventNotification(e)),
+
+                    const SizedBox(height: 20),
+
+                  ],
+                );
+              },
             ),
 
-            const SizedBox(height: 30),
+            /// DASHBOARD FEATURES
 
-            card(context, Icons.check_circle, "Attendance", AttendanceScreen()),
-            card(context, Icons.assignment, "Assignments", AssignmentsScreen()),
-            card(context, Icons.map, "Campus Map", CampusMapScreen()),
-            card(context, Icons.account_balance_wallet, "Fee Portal", FeePortalScreen()),
-            card(context, Icons.schedule, "Timetable", TimetableScreen()),
+            card(context, Icons.check_circle, "Attendance", const AttendanceScreen()),
+
+            card(context, Icons.assignment, "Assignments", const ViewAssignmentsScreen()),
+
+            card(context, Icons.map, "Campus Map", const CampusMapScreen()),
+
+            card(context, Icons.account_balance_wallet, "Fee Portal", const FeePortalScreen()),
+
+            card(context, Icons.schedule, "Timetable", const TimetableScreen()),
+
             card(context, Icons.calendar_month, "Upcoming Holidays", const HolidaysScreen()),
+
             card(context, Icons.smart_toy, "AI Assistant", const AIChatScreen()),
+
           ],
         ),
       ),
     );
   }
 }
-
-
 /* ---------------- TEACHER DASHBOARD ---------------- */
 
 class TeacherDashboard extends StatelessWidget {
@@ -494,28 +577,54 @@ class TeacherDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
+
       appBar: AppBar(
         title: const Text("Teacher Dashboard"),
       ),
+
       body: Padding(
         padding: const EdgeInsets.all(16),
+
         child: Column(
           children: [
-            teacherCard(
-              context,
-              Icons.report_problem,
-              "Raise Complaint",
-              const ComplaintScreen(),
-            ),
+
             teacherCard(
               context,
               Icons.qr_code,
               "QR Attendance",
               const QRAttendanceScreen(),
             ),
+
+            teacherCard(
+              context,
+              Icons.assignment,
+              "Upload Assignment",
+              const UploadAssignmentScreen(),
+            ),
+
+            teacherCard(
+              context,
+              Icons.report_problem,
+              "Raise Complaint",
+              const ComplaintScreen(),
+            ),
+
+            teacherCard(
+              context,
+              Icons.person,
+              "Profile",
+              TeacherProfileScreen(),
+            ),
+
+            teacherCard(
+  context,
+  Icons.event,
+  "Upload Campus Event",
+  UploadEventScreen(),
+),
+
           ],
         ),
       ),
@@ -528,17 +637,21 @@ class TeacherDashboard extends StatelessWidget {
     String text,
     Widget screen,
   ) {
+
     final colorScheme = Theme.of(context).colorScheme;
 
     return GestureDetector(
       onTap: () =>
           Navigator.push(context, MaterialPageRoute(builder: (_) => screen)),
+
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(20),
+
         decoration: BoxDecoration(
-          color: colorScheme.surface, 
+          color: colorScheme.surface,
           borderRadius: BorderRadius.circular(20),
+
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.1),
@@ -546,16 +659,20 @@ class TeacherDashboard extends StatelessWidget {
             ),
           ],
         ),
+
         child: Row(
           children: [
+
             Icon(icon, color: colorScheme.primary, size: 30),
+
             const SizedBox(width: 20),
+
             Text(
               text,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: colorScheme.onSurface, 
+                color: colorScheme.onSurface,
               ),
             ),
           ],
@@ -566,51 +683,71 @@ class TeacherDashboard extends StatelessWidget {
 }
 
 /* ---------------- COMPLAINT ---------------- */
-
-class ComplaintScreen extends StatelessWidget {
+class ComplaintScreen extends StatefulWidget {
   const ComplaintScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Raise Complaint"),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: const [
-            TextField(
-              decoration: InputDecoration(labelText: "Classroom"),
-            ),
-            SizedBox(height: 12),
-            TextField(
-              decoration: InputDecoration(labelText: "Issue"),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  State<ComplaintScreen> createState() => _ComplaintScreenState();
 }
 
+class _ComplaintScreenState extends State<ComplaintScreen> {
 
-/* ---------------- QR ATTENDANCE ---------------- */
+  final classroomController = TextEditingController();
+  final issueController = TextEditingController();
 
-class QRAttendanceScreen extends StatelessWidget {
-  const QRAttendanceScreen({super.key});
+  final supabase = Supabase.instance.client;
+
+  Future submitComplaint() async {
+
+    await supabase.from('complaints').insert({
+      'classroom': classroomController.text,
+      'issue': issueController.text,
+      'created_at': DateTime.now().toIso8601String()
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Complaint Submitted"))
+    );
+
+    Navigator.pop(context);
+  }
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
+
       appBar: AppBar(
-        title: const Text("QR Attendance"),
-        backgroundColor: const Color(0xff6A5AE0),
+        title: const Text("Raise Complaint"),
       ),
-      body: const Center(
-        child: Text("QR Scanner Coming Soon"),
+
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+
+        child: Column(
+          children: [
+
+            TextField(
+              controller: classroomController,
+              decoration: const InputDecoration(labelText: "Classroom"),
+            ),
+
+            const SizedBox(height: 12),
+
+            TextField(
+              controller: issueController,
+              decoration: const InputDecoration(labelText: "Issue"),
+            ),
+
+            const SizedBox(height: 20),
+
+            ElevatedButton(
+              onPressed: submitComplaint,
+              child: const Text("Submit Complaint"),
+            ),
+
+          ],
+        ),
       ),
     );
   }
