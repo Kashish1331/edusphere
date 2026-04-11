@@ -16,7 +16,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
   List<Map<String, String>> messages = [];
 
   Future<void> askAI(String question) async {
-  const apiKey = "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";
+  const apiKey = "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";
 
   try {
     final response = await http.post(
