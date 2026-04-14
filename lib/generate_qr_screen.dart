@@ -3,10 +3,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class GenerateQRScreen extends StatefulWidget {
-
-  final String day;
-
-  const GenerateQRScreen({super.key, required this.day});
+  const GenerateQRScreen({super.key});
 
   @override
   State<GenerateQRScreen> createState() => _GenerateQRScreenState();
@@ -16,14 +13,16 @@ class _GenerateQRScreenState extends State<GenerateQRScreen> {
 
   final supabase = Supabase.instance.client;
 
-  List subjects = [];
-
+  int? semester;
+  List<String> subjects = [];
   String? subject;
 
   String? sessionId;
 
   Future loadSubjects() async {
 
+    if (semester == null) return;
+
     final user = supabase.auth.currentUser;
 
     final userData = await supabase
@@ -33,25 +32,29 @@ class _GenerateQRScreenState extends State<GenerateQRScreen> {
         .single();
 
     final department = userData['department'];
-    final semester = userData['semester'];
 
     final data = await supabase
         .from('timetable')
-        .select()
+        .select('subject')
         .eq('department', department)
-        .eq('semester', semester)
-        .eq('day', widget.day);
+        .eq('semester', semester!);
+
+    /// remove duplicate subjects
+    final uniqueSubjects = data
+        .map((e) => e['subject'] as String)
+        .toSet()
+        .toList();
 
     setState(() {
-      subjects = data;
-      if (subjects.isNotEmpty) {
-        subject = subjects.first['subject'];
-      }
+      subjects = uniqueSubjects;
+      subject = null;
     });
   }
 
   Future generateQR() async {
 
+    if (subject == null || semester == null) return;
+
     final user = supabase.auth.currentUser;
 
     final userData = await supabase
@@ -61,7 +64,6 @@ class _GenerateQRScreenState extends State<GenerateQRScreen> {
         .single();
 
     final department = userData['department'];
-    final semester = userData['semester'];
 
     final expires = DateTime.now().add(const Duration(seconds: 30));
 
@@ -71,7 +73,6 @@ class _GenerateQRScreenState extends State<GenerateQRScreen> {
           'subject': subject,
           'department': department,
           'semester': semester,
-          'day': widget.day,
           'expires_at': expires.toIso8601String()
         })
         .select()
@@ -93,18 +94,12 @@ class _GenerateQRScreenState extends State<GenerateQRScreen> {
   }
 
   @override
-  void initState() {
-    super.initState();
-    loadSubjects();
-  }
-
-  @override
   Widget build(BuildContext context) {
 
     return Scaffold(
 
       appBar: AppBar(
-        title: Text("QR Attendance - ${widget.day}"),
+        title: const Text("Generate Attendance QR"),
       ),
 
       body: Padding(
@@ -113,30 +108,65 @@ class _GenerateQRScreenState extends State<GenerateQRScreen> {
         child: Column(
           children: [
 
-            if (subjects.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(30),
-                child: CircularProgressIndicator(),
+            /// SEMESTER SELECT
+
+            DropdownButtonFormField<int>(
+
+              value: semester,
+
+              decoration: const InputDecoration(
+                labelText: "Select Semester",
               ),
+
+              items: List.generate(
+                8,
+                (index) => DropdownMenuItem(
+                  value: index + 1,
+                  child: Text("Semester ${index + 1}"),
+                ),
+              ),
+
+              onChanged: (v) {
+
+                setState(() {
+                  semester = v;
+                  subjects = [];
+                  subject = null;
+                });
+
+                loadSubjects();
+              },
+            ),
+
+            const SizedBox(height: 20),
+
+            /// SUBJECT SELECT
+
+            if (subjects.isEmpty && semester != null)
+              const CircularProgressIndicator(),
 
             if (subjects.isNotEmpty)
 
-              DropdownButtonFormField(
+              DropdownButtonFormField<String>(
 
                 value: subject,
+
+                decoration: const InputDecoration(
+                  labelText: "Select Subject",
+                ),
 
                 items: subjects.map((s) {
 
                   return DropdownMenuItem(
-                    value: s['subject'],
-                    child: Text(s['subject']),
+                    value: s,
+                    child: Text(s),
                   );
 
                 }).toList(),
 
                 onChanged: (v) {
                   setState(() {
-                    subject = v as String?;
+                    subject = v;
                   });
                 },
               ),

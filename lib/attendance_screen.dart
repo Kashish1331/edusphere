@@ -13,6 +13,40 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
   final supabase = Supabase.instance.client;
 
+  List<String> subjects = [];
+
+  Future loadSubjects() async {
+
+    final user = supabase.auth.currentUser;
+
+    if (user == null) return;
+
+    final userData = await supabase
+        .from('users')
+        .select()
+        .eq('id', user.id)
+        .single();
+
+    final department = userData['department'];
+    final semester = userData['semester'];
+
+    final data = await supabase
+        .from('timetable')
+        .select('subject')
+        .eq('department', department)
+        .eq('semester', semester);
+
+    /// remove duplicate subjects
+    final uniqueSubjects = data
+        .map((e) => e['subject'] as String)
+        .toSet()
+        .toList();
+
+    setState(() {
+      subjects = uniqueSubjects;
+    });
+  }
+
   Future<int> getAttendancePercent(String subject) async {
 
     final user = supabase.auth.currentUser;
@@ -27,7 +61,6 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     if (sessions.isEmpty) return 0;
 
     int totalSessions = sessions.length;
-
     int attended = 0;
 
     for (var session in sessions) {
@@ -44,6 +77,12 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     }
 
     return ((attended / totalSessions) * 100).round();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    loadSubjects();
   }
 
   @override
@@ -97,16 +136,21 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
             /// ATTENDANCE LIST
             Expanded(
-              child: ListView(
-                children: [
 
-                  buildAttendance("Mathematics"),
-                  buildAttendance("Programming"),
-                  buildAttendance("Physics"),
-                  buildAttendance("Design Thinking"),
+              child: subjects.isEmpty
+                  ? const Center(child: CircularProgressIndicator())
 
-                ],
-              ),
+                  : ListView.builder(
+
+                      itemCount: subjects.length,
+
+                      itemBuilder: (context, index) {
+
+                        final subject = subjects[index];
+
+                        return buildAttendance(subject);
+                      },
+                    ),
             ),
 
           ],

@@ -15,15 +15,29 @@ class _ViewAssignmentsScreenState extends State<ViewAssignmentsScreen> {
   List assignments = [];
 
   Future loadAssignments() async {
-    final data = await supabase
-        .from('assignments')
-        .select()
-        .order('deadline');
 
-    setState(() {
-      assignments = data;
-    });
-  }
+  final user = supabase.auth.currentUser;
+
+  final userData = await supabase
+      .from('users')
+      .select()
+      .eq('id', user!.id)
+      .single();
+
+  final department = userData['department'];
+  final semester = userData['semester'];
+
+  final data = await supabase
+      .from('assignments')
+      .select()
+      .eq('department', department)
+      .eq('semester', semester)
+      .order('deadline');
+
+  setState(() {
+    assignments = data;
+  });
+}
 
   @override
   void initState() {

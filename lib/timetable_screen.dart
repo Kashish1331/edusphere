@@ -80,46 +80,59 @@ class _DayTimetableScreenState extends State<DayTimetableScreen> {
 
   Future<List<dynamic>> fetchTimetable() async {
 
-    final user = supabase.auth.currentUser;
+  final user = supabase.auth.currentUser;
+  if (user == null) return [];
 
-    if (user == null) return [];
+  final userData = await supabase
+      .from('users')
+      .select()
+      .eq('id', user.id)
+      .single();
 
-    /// FETCH USER DATA
-    final userData = await supabase
-        .from('users')
-        .select()
-        .eq('id', user.id)
-        .single();
+  final department = userData['department'];
+  final int semester = int.parse(userData['semester'].toString());
 
-    final semester = userData['semester'];
-    final department = userData['department'];
-    String specialization = userData['specialization'] ?? "None";
+  String specialization = userData['specialization'] ?? "None";
 
-    /// FIX possible mismatch
-    if (specialization == "None (First Year)") {
-      specialization = "None";
+  if (specialization == "None (First Year)") {
+    specialization = "None";
+  }
+
+  List data = [];
+
+  try {
+
+    /// specialization timetable (Sem 3+)
+    if (semester >= 3 && specialization != "None") {
+
+      data = await supabase
+          .from('timetable')
+          .select()
+          .eq('department', department)
+          .eq('semester', semester)
+          .eq('day', widget.day)
+          .eq('specialization', specialization)
+          .order('time');
     }
 
-    /// DEBUG PRINTS
-    print("----- TIMETABLE QUERY -----");
-    print("Department: $department");
-    print("Semester: $semester");
-    print("Specialization: $specialization");
-    print("Day: ${widget.day}");
+    /// fallback timetable
+    if (data.isEmpty) {
 
-    /// FETCH TIMETABLE
-    final data = await supabase
-    .from('timetable')
-    .select()
-    .eq('department', department)
-    .eq('semester', semester)
-    .eq('day', widget.day)
-    .order('time');
+      data = await supabase
+          .from('timetable')
+          .select()
+          .eq('department', department)
+          .eq('semester', semester)
+          .eq('day', widget.day)
+          .order('time');
+    }
 
-    print("Rows returned: ${data.length}");
-
-    return data;
+  } catch (e) {
+    print("Timetable error: $e");
   }
+
+  return data;
+}
 
   @override
   Widget build(BuildContext context) {

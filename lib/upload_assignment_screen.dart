@@ -18,9 +18,11 @@ class _UploadAssignmentScreenState extends State<UploadAssignmentScreen> {
   List<String> subjects = [];
   String? selectedSubject;
 
+  int semester = 1;
+
   DateTime? deadline;
 
-  Future<void> loadSubjects() async {
+  Future loadSubjects() async {
 
     final user = supabase.auth.currentUser;
 
@@ -31,45 +33,28 @@ class _UploadAssignmentScreenState extends State<UploadAssignmentScreen> {
         .single();
 
     final department = userData['department'];
-    final semester = userData['semester'];
 
-    final response = await supabase
+    final data = await supabase
         .from('timetable')
-        .select('subject')
+        .select()
         .eq('department', department)
         .eq('semester', semester);
 
-    /// convert response safely to List<String>
-    List<String> subjectList = [];
+    final Set<String> uniqueSubjects = {};
 
-    for (var item in response) {
-      subjectList.add(item['subject'].toString());
+    for (var row in data) {
+      uniqueSubjects.add(row['subject']);
     }
 
-    /// remove duplicates
-    subjectList = subjectList.toSet().toList();
-
     setState(() {
-      subjects = subjectList;
-
+      subjects = uniqueSubjects.toList();
       if (subjects.isNotEmpty) {
         selectedSubject = subjects.first;
       }
     });
   }
 
-  Future<void> uploadAssignment() async {
-
-    if (selectedSubject == null ||
-        titleController.text.isEmpty ||
-        descriptionController.text.isEmpty ||
-        deadline == null) {
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill all fields")),
-      );
-      return;
-    }
+  Future uploadAssignment() async {
 
     final user = supabase.auth.currentUser;
 
@@ -80,7 +65,6 @@ class _UploadAssignmentScreenState extends State<UploadAssignmentScreen> {
         .single();
 
     final department = userData['department'];
-    final semester = userData['semester'];
 
     await supabase.from('assignments').insert({
 
@@ -89,7 +73,7 @@ class _UploadAssignmentScreenState extends State<UploadAssignmentScreen> {
       'semester': semester,
       'title': titleController.text,
       'description': descriptionController.text,
-      'deadline': deadline!.toIso8601String()
+      'deadline': deadline?.toIso8601String()
 
     });
 
@@ -121,7 +105,39 @@ class _UploadAssignmentScreenState extends State<UploadAssignmentScreen> {
         child: Column(
           children: [
 
-            /// SUBJECT DROPDOWN
+            /// SEMESTER SELECTOR
+
+            DropdownButtonFormField<int>(
+
+              value: semester,
+
+              decoration: const InputDecoration(
+                labelText: "Select Semester",
+              ),
+
+              items: List.generate(
+                8,
+                (index) => DropdownMenuItem(
+                  value: index + 1,
+                  child: Text("Semester ${index + 1}"),
+                ),
+              ),
+
+              onChanged: (value) {
+
+                setState(() {
+                  semester = value!;
+                  subjects.clear();
+                  selectedSubject = null;
+                });
+
+                loadSubjects();
+              },
+            ),
+
+            const SizedBox(height: 16),
+
+            /// SUBJECT SELECTOR
 
             if (subjects.isEmpty)
               const CircularProgressIndicator(),
@@ -131,21 +147,29 @@ class _UploadAssignmentScreenState extends State<UploadAssignmentScreen> {
 
                 value: selectedSubject,
 
-                items: subjects.map((sub) {
-                  return DropdownMenuItem<String>(
-                    value: sub,
-                    child: Text(sub),
+                decoration: const InputDecoration(
+                  labelText: "Select Subject",
+                ),
+
+                items: subjects.map((subject) {
+
+                  return DropdownMenuItem(
+                    value: subject,
+                    child: Text(subject),
                   );
+
                 }).toList(),
 
                 onChanged: (value) {
+
                   setState(() {
                     selectedSubject = value;
                   });
+
                 },
               ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
 
             /// TITLE
 
@@ -156,7 +180,7 @@ class _UploadAssignmentScreenState extends State<UploadAssignmentScreen> {
               ),
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
 
             /// DESCRIPTION
 
@@ -169,7 +193,7 @@ class _UploadAssignmentScreenState extends State<UploadAssignmentScreen> {
 
             const SizedBox(height: 20),
 
-            /// DATE PICKER
+            /// DEADLINE PICKER
 
             ElevatedButton(
 
@@ -182,11 +206,9 @@ class _UploadAssignmentScreenState extends State<UploadAssignmentScreen> {
                   lastDate: DateTime(2030),
                 );
 
-                if (picked != null) {
-                  setState(() {
-                    deadline = picked;
-                  });
-                }
+                setState(() {
+                  deadline = picked;
+                });
 
               },
 
@@ -194,27 +216,16 @@ class _UploadAssignmentScreenState extends State<UploadAssignmentScreen> {
 
             ),
 
-            const SizedBox(height: 10),
-
-            if (deadline != null)
-              Text(
-                "Deadline: ${deadline!.day}/${deadline!.month}/${deadline!.year}",
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-
             const SizedBox(height: 20),
 
             /// UPLOAD BUTTON
 
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
+            ElevatedButton(
 
-                onPressed: uploadAssignment,
+              onPressed: uploadAssignment,
 
-                child: const Text("Upload Assignment"),
+              child: const Text("Upload Assignment"),
 
-              ),
             ),
 
           ],
